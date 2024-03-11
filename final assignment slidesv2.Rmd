@@ -1,0 +1,169 @@
+---
+title: "Vehicle Choice App"
+author: "NHartley"
+date: "2024-03-02"
+output:
+  ioslides_presentation:
+    css: default
+  beamer_presentation:
+    css: default
+  slidy_presentation:
+    default
+---
+
+```{css, echo=FALSE}
+/* Global font adjustments */
+.slides {
+  font-size: 14px;
+  font-family: 'Helvetica Neue', Arial, sans-serif; /* Change the font globally */
+  color: #0056b3; /* Global text color - Dark gray */
+}
+
+/* Specific adjustment for the Overview slide elements */
+#overview .content {
+  font-size: 12px;
+  color: #0056b3; /* Change text color specifically for Overview slide content - Blue */
+}
+
+/* Change the color for all headings */
+.slides h1, .slides h2, .slides h3, .slides h4, .slides h5, .slides h6 {
+  color: #007bff; /* Darker blue */
+}
+
+/* Optionally, if you want a specific paragraph or element to have a different text color */
+.special-text {
+  color: #0077cc; /* Slightly lighter blue */
+}
+
+/* Reduce the bottom margin of all headers */
+.slides h1, .slides h2, .slides h3, .slides h4, .slides h5, .slides h6 {
+  margin-bottom: 10px; /* Adjust this value as needed */
+}
+
+/* Reduce the top margin of unordered and ordered lists */
+.slides ul, .slides ol {
+  margin-top: 0px; /* Adjust this value as needed */
+}
+
+```
+
+
+```{r setup, include=FALSE}
+# Install and load required packages
+required_packages <- c("knitr", "kableExtra", "dplyr", "ggplot2", "gridExtra")
+
+new_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages)
+
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+
+knitr::opts_chunk$set(echo = FALSE)
+cat("
+<style>
+.slides * {
+  font-size: 14px !important; /* Smaller font size to fit more content */
+}
+
+/* Reduce the bottom margin of all headers */
+.slides h1, .slides h2, .slides h3, .slides h4, .slides h5, .slides h6 {
+  margin-bottom: 10px; /* Adjust this value as needed */
+}
+
+/* Reduce the top margin of unordered and ordered lists */
+.slides ul, .slides ol {
+  margin-top: 0px; /* Adjust this value as needed */
+}
+</style>
+", file = "styles.css")
+
+
+```
+
+## OVERVIEW {.smaller}
+
+### INTENT
+-   The goal of this app is for users to highlight eligible cars from the mtcars dataset by toggling two variables:
+-   Transmission type (manual vs. automatic)
+-   Miles per Gallon (mpg)
+
+### INSTRUCTIONS
+-   1: Select choice of transmission type with the radio button
+-   2: Select mpg threshold using the slider
+-   3: Click "Submit"
+
+### DESCRIPTION OF DATA SET
+-   The mtcars dataset is a dataset available in R
+-   It comprises fuel consumption and 10 aspects of design and performance for 32 vehicles
+
+## MTCARS SUMMARY STATISTICS {.smaller}
+```{r echo=FALSE, eval = TRUE}
+# Load the mtcars dataset
+data(mtcars)
+
+# Displaying summary statistics in two parts
+summary_statistics_part1 <- summary(mtcars[,1:6])
+summary_statistics_part2 <- summary(mtcars[,7:11])
+
+# Use kable to present these statistics
+kable(summary_statistics_part1, format = "html") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+kable(summary_statistics_part2, format = "html") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+```
+
+## ANALYSIS 1 {.smaller}
+```{r plots, echo=FALSE, fig.width=8, fig.height=5}
+library(ggplot2)
+library(gridExtra)
+
+# Boxplot comparing mpg for manual and automatic transmissions using ggplot2
+boxplot_mpg <- ggplot(mtcars, aes(x=factor(am), y=mpg, fill=factor(am))) +
+  geom_boxplot() +
+  labs(title="MPG Comparison by Transmission Type",
+       x="Transmission Type", y="Miles Per Gallon") +
+  scale_fill_manual(values=c("pink", "brown"), labels=c("Automatic", "Manual")) +
+  theme_minimal() +
+  theme(legend.title=element_blank())
+
+# Linear model plot
+model <- lm(mpg ~ wt + cyl + as.factor(am), data=mtcars)
+mtcars$predicted_mpg <- predict(model)
+
+plot_lm <- ggplot(mtcars, aes(x=mpg, y=predicted_mpg)) +
+  geom_point() +
+  geom_abline(intercept=0, slope=1, color="brown") +
+  labs(title="Observed vs. Fitted MPG (using Weight,\n Cylinders, and Trans. Type)",
+       x="Observed MPG", y="Fitted MPG") +
+  theme_minimal()
+
+# Combine plots side by side using gridExtra
+grid.arrange(boxplot_mpg, plot_lm, ncol=2)
+
+```
+
+
+## ANALYSIS 2 {.smaller}
+```{r additional_plots, echo=FALSE, warning=FALSE, fig.width=8, fig.height=5}
+# Histogram of Cylinders vs. Weight
+histogram <- ggplot(mtcars, aes(x = cyl, y = wt)) +
+  geom_histogram(stat = "identity", fill = "pink", bins = 10) +
+  labs(title = "Histogram of Cylinders vs. Weight",
+       x = "Cylinders", y = "Weight") +
+  theme_minimal()
+
+# Boxplot of Weight across different numbers of cylinders
+boxplot <- ggplot(mtcars, aes(x = factor(cyl), y = wt)) +
+  geom_boxplot(fill = "brown") +
+  labs(title = "Boxplot of Weight Across\nDifferent Numbers of Cylinders",
+       x = "Cylinders", y = "Weight") +
+  theme_minimal()
+
+# Display both plots
+grid.arrange(histogram, boxplot, ncol = 2)
+```
